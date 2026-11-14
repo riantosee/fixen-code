@@ -7,8 +7,27 @@ const colors = require('../src/cli/colors');
 const Commands = require('../src/cli/commands');
 const Repl = require('../src/cli/repl');
 const Orchestrator = require('../src/core/orchestrator');
+const CheckpointManager = require('../src/memory/checkpoint-manager');
 const UI = require('../src/cli/ui');
 const pkg = require('../package.json');
+
+let activeOrchestrator = null;
+
+// Graceful signal handling for crash & interruption recovery
+process.on('SIGINT', () => {
+  console.log(colors.yellow('\n\n[FIXEN] Interruption signal received (SIGINT). Safely saving session checkpoint...'));
+  if (activeOrchestrator) {
+    activeOrchestrator.cancelActiveTask();
+  }
+  process.exit(130);
+});
+
+process.on('SIGTERM', () => {
+  if (activeOrchestrator) {
+    activeOrchestrator.cancelActiveTask();
+  }
+  process.exit(143);
+});
 
 async function main() {
   const args = process.argv.slice(2);
@@ -25,6 +44,8 @@ async function main() {
 Usage:
   fixen                          Start interactive REPL
   fixen "task description"       Run an autonomous task directly
+  fixen resume [sessionId]       Resume an interrupted/crashed session
+  fixen skills [list|info]       List or view engineering skills
   fixen chat                     Start interactive REPL
   fixen plan "task description"  Generate an implementation plan only
   fixen review [path]            Run code quality & security review
@@ -58,6 +79,16 @@ Options:
     return Commands.models(process.cwd());
   }
 
+  if (firstArg === 'skills') {
+    return Commands.skills(args.slice(1), process.cwd());
+  }
+
+  if (firstArg === 'resume') {
+    const sessionId = args[1] || null;
+    printBanner(pkg.version);
+    return Commands.resume(sessionId, process.cwd());
+  }
+
   if (firstArg === 'init') {
     return Commands.init(process.cwd());
   }
@@ -81,7 +112,20 @@ Options:
   // Interactive REPL or direct task execution
   printBanner(pkg.version);
 
+  // Check for interrupted session before starting fresh
+  const checkpointManager = new CheckpointManager(process.cwd());
+  const interrupted = checkpointManager.getLatestInterruptedSession();
+
   if (!firstArg || firstArg === 'chat') {
+    if (interrupted) {
+      const timeAgo = new Date(interrupted.updatedAt).toLocaleTimeString();
+      console.log(colors.yellow(`\n⚠ Detected an interrupted task: "${interrupted.task}" (Session: ${interrupted.sessionId}, ${timeAgo})`));
+      const shouldResume = await UI.confirm('Would you like to resume this previous work?', true);
+      if (shouldResume) {
+        return Commands.resume(interrupted.sessionId, process.cwd());
+      }
+    }
+
     const repl = new Repl(process.cwd());
     return repl.start();
   }
@@ -110,6 +154,8 @@ Options:
       }
     }
   });
+
+  activeOrchestrator = orchestrator;
 
   console.log(colors.bold(`\nTask: "${task}"\n`));
   const result = await orchestrator.runTask(task);

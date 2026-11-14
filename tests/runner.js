@@ -17,6 +17,9 @@ async function runAllTests() {
     'groq-provider.test.js',
     'plugin.test.js',
     'session.test.js',
+    'checkpoint.test.js',
+    'skills.test.js',
+    'resume.test.js',
     'agent-loop.test.js',
     'integration.test.js'
   ];

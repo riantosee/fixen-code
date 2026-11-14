@@ -10,6 +10,8 @@ class AgentLoop {
     analyzer,
     planningEngine,
     sessionStore,
+    checkpointManager = null,
+    skillManager = null,
     options = {}
   }) {
     this.provider = provider;
@@ -17,6 +19,8 @@ class AgentLoop {
     this.analyzer = analyzer;
     this.planning = planningEngine;
     this.session = sessionStore;
+    this.checkpointManager = checkpointManager;
+    this.skillManager = skillManager;
     this.reasoning = new ReasoningEngine();
 
     this.maxIterations = options.maxIterations || 25;
@@ -37,6 +41,9 @@ class AgentLoop {
 
   cancel() {
     this.cancelled = true;
+    if (this.checkpointManager && this.session) {
+      this.checkpointManager.markInterrupted(this.session.getCurrentSession().id, 'Cancelled by user');
+    }
   }
 
   isLooping(toolName, args) {
@@ -45,7 +52,6 @@ class AgentLoop {
     if (this.recentToolSignatures.length > 5) {
       this.recentToolSignatures.shift();
     }
-    // Check if last 3 signatures are identical
     if (this.recentToolSignatures.length >= 3) {
       const last3 = this.recentToolSignatures.slice(-3);
       if (last3[0] === last3[1] && last3[1] === last3[2]) {
@@ -56,7 +62,7 @@ class AgentLoop {
   }
 
   buildSystemPrompt(projectSummary) {
-    return [
+    const sections = [
       'You are FIXEN CODE, an advanced autonomous AI software engineering agent.',
       'Brand tagline: "Build Anything. Fix Everything."',
       '',
@@ -73,7 +79,33 @@ class AgentLoop {
       '7. Be concise and report the exact files modified and verification results.',
       '',
       projectSummary
-    ].join('\n');
+    ];
+
+    if (this.skillManager) {
+      const skillsPrompt = this.skillManager.getSkillsPrompt();
+      if (skillsPrompt) {
+        sections.push('', skillsPrompt);
+      }
+    }
+
+    return sections.join('\n');
+  }
+
+  saveCheckpoint(iteration, task, plan, modifiedFiles, context) {
+    if (!this.checkpointManager || !this.session) return;
+    try {
+      const sessionId = this.session.getCurrentSession().id;
+      this.checkpointManager.saveCheckpoint(sessionId, {
+        task,
+        status: 'RUNNING',
+        mode: this.mode,
+        currentIteration: iteration,
+        maxIterations: this.maxIterations,
+        plan,
+        modifiedFiles: Array.from(modifiedFiles),
+        recentMessages: context ? context.messages.slice(-6) : []
+      });
+    } catch {}
   }
 
   async run(userTask) {
@@ -96,7 +128,6 @@ class AgentLoop {
     }
 
     if (this.mode === 'plan') {
-      // Plan Mode only creates and presents plan
       return {
         status: 'COMPLETED',
         mode: 'plan',
@@ -125,23 +156,100 @@ class AgentLoop {
       this.session.addMessage('user', userPrompt);
     }
 
+    const modifiedFiles = new Set();
+    this.saveCheckpoint(0, userTask, plan, modifiedFiles, context);
+
+    return this.executeLoop({
+      task: userTask,
+      plan,
+      context,
+      startIteration: 0,
+      modifiedFiles
+    });
+  }
+
+  async resume(checkpoint) {
+    this.cancelled = false;
+    this.consecutiveFailures = 0;
+    this.recentToolSignatures = [];
+
+    const task = checkpoint.task || 'Resumed Task';
+    const plan = checkpoint.plan || { objective: task, steps: [] };
+    const startIteration = checkpoint.currentIteration || 0;
+    const modifiedFiles = new Set(checkpoint.modifiedFiles || []);
+
+    this.callbacks.onStatus('RESUMING SESSION', `Resuming task "${task}" from iteration ${startIteration}...`);
+
+    const projectSummary = this.analyzer.getArchitectureSummary();
+    const context = new ContextManager({
+      maxContextTokens: 24000,
+      systemPrompt: this.buildSystemPrompt(projectSummary)
+    });
+
+    // Reconstruct resume context
+    const resumePrompt = [
+      `[SYSTEM: RESUMING PREVIOUS INTERRUPTED SESSION]`,
+      `User Request: "${task}"`,
+      `Interrupted at iteration: ${startIteration}/${this.maxIterations}`,
+      `Previously modified files: ${modifiedFiles.size > 0 ? Array.from(modifiedFiles).join(', ') : 'None'}`,
+      '',
+      'Execution Plan:',
+      this.planning.formatPlanMarkdown(plan),
+      '',
+      'Inspect the workspace state, continue with the remaining pending plan steps, and thoroughly verify all implementations before reporting completion.'
+    ].join('\n');
+
+    context.addMessage('user', resumePrompt);
+
+    // Re-inject recent messages if available
+    if (checkpoint.recentMessages && Array.isArray(checkpoint.recentMessages)) {
+      for (const msg of checkpoint.recentMessages) {
+        if (msg.role !== 'system') {
+          context.addMessage(msg.role, msg.content, {
+            tool_calls: msg.tool_calls,
+            tool_call_id: msg.tool_call_id,
+            name: msg.name
+          });
+        }
+      }
+    }
+
+    if (this.session) {
+      this.session.addMessage('system', `Resumed session from iteration ${startIteration}`);
+    }
+
+    return this.executeLoop({
+      task,
+      plan,
+      context,
+      startIteration,
+      modifiedFiles
+    });
+  }
+
+  async executeLoop({ task, plan, context, startIteration, modifiedFiles }) {
     const toolSchemas = this.tools.getToolsSchema();
-    let iteration = 0;
-    let modifiedFiles = new Set();
+    let iteration = startIteration;
     let verified = false;
     let finalAssistantResponse = '';
 
     while (iteration < this.maxIterations) {
       if (this.cancelled) {
         this.callbacks.onStatus('CANCELLED', 'Operation was cancelled by user.');
+        if (this.checkpointManager && this.session) {
+          this.checkpointManager.markInterrupted(this.session.getCurrentSession().id, 'User cancelled');
+        }
         return { status: 'CANCELLED', modifiedFiles: Array.from(modifiedFiles) };
       }
 
       iteration++;
       this.callbacks.onStatus('REASONING', `Iteration ${iteration}/${this.maxIterations}...`);
 
-      // Compact context if getting too large
+      // Compact context if needed
       context.compactIfNeeded();
+
+      // Save checkpoint at start of iteration
+      this.saveCheckpoint(iteration, task, plan, modifiedFiles, context);
 
       let response;
       try {
@@ -152,6 +260,9 @@ class AgentLoop {
         });
       } catch (err) {
         this.callbacks.onStatus('PROVIDER_ERROR', err.message);
+        if (this.checkpointManager && this.session) {
+          this.checkpointManager.markInterrupted(this.session.getCurrentSession().id, `Provider error: ${err.message}`);
+        }
         return {
           status: 'ERROR',
           error: `Provider error: ${err.message}`,
@@ -165,17 +276,20 @@ class AgentLoop {
         this.callbacks.onMessage('assistant', response.content);
       }
 
-      // If no tool calls, model considers task ready or has a question
+      // If no tool calls, model considers task finished
       if (!response.toolCalls || response.toolCalls.length === 0) {
-        // If we modified files but haven't verified yet, prompt model to verify
         if (modifiedFiles.size > 0 && !verified && iteration < this.maxIterations - 1) {
           context.addMessage('assistant', response.content || 'I have completed the changes.');
           context.addMessage('user', 'Please verify your work by running existing tests or inspecting the modified files to ensure there are no syntax errors or regressions before completing.');
-          verified = true; // Avoid infinite verification nudge
+          verified = true;
           continue;
         }
 
         this.callbacks.onStatus('FINAL REPORT', 'Task completed.');
+        if (this.checkpointManager && this.session) {
+          this.checkpointManager.markCompleted(this.session.getCurrentSession().id);
+        }
+
         return {
           status: 'SUCCESS',
           summary: response.content || 'Task completed successfully.',
@@ -229,6 +343,7 @@ class AgentLoop {
               toolName === 'write_file' ? 'write' : 'edit'
             );
           }
+          this.saveCheckpoint(iteration, task, plan, modifiedFiles, context);
         }
 
         // Analyze result with reasoning engine
@@ -237,6 +352,9 @@ class AgentLoop {
         if (!analysis.success) {
           this.consecutiveFailures++;
           if (this.consecutiveFailures >= 5) {
+            if (this.checkpointManager && this.session) {
+              this.checkpointManager.markInterrupted(this.session.getCurrentSession().id, `Stuck: ${analysis.message}`);
+            }
             return {
               status: 'STUCK',
               error: `Agent got stuck after 5 consecutive tool failures. Last error: ${analysis.message}`,
@@ -248,7 +366,6 @@ class AgentLoop {
           this.consecutiveFailures = 0;
         }
 
-        // Send tool observation back to context
         const observationPayload = {
           success: executionResult.success,
           output: executionResult.result || null,
@@ -269,6 +386,10 @@ class AgentLoop {
           });
         }
       }
+    }
+
+    if (this.checkpointManager && this.session) {
+      this.checkpointManager.markInterrupted(this.session.getCurrentSession().id, 'Max iterations reached');
     }
 
     return {

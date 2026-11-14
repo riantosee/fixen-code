@@ -14,6 +14,8 @@ const GitTools = require('../tools/git-tools');
 const ProjectAnalyzer = require('../intelligence/analyzer');
 const ProviderFactory = require('../providers/provider-factory');
 const SessionStore = require('../memory/session-store');
+const CheckpointManager = require('../memory/checkpoint-manager');
+const SkillManager = require('../skills/skill-manager');
 const PlanningEngine = require('./planning');
 const AgentLoop = require('./agent-loop');
 
@@ -100,10 +102,14 @@ class Orchestrator {
     const providerName = this.options.provider || this.configManager.get('provider', 'groq');
     this.provider = ProviderFactory.create(providerName, this.configManager);
 
-    // 9. Session Store
+    // 9. Session Store & Checkpoint Manager
     this.sessionStore = new SessionStore(this.workspace);
+    this.checkpointManager = new CheckpointManager(this.workspace);
 
-    // 10. Planning Engine
+    // 10. Skills Engine
+    this.skillManager = new SkillManager(this.workspace);
+
+    // 11. Planning Engine
     this.planning = new PlanningEngine(this.provider);
   }
 
@@ -127,6 +133,12 @@ class Orchestrator {
     return this.mode;
   }
 
+  cancelActiveTask() {
+    if (this.activeLoop) {
+      this.activeLoop.cancel();
+    }
+  }
+
   async runTask(task) {
     // Mode-specific routing
     if (this.mode === 'ask') {
@@ -141,12 +153,14 @@ class Orchestrator {
     this.sessionStore.createSession(task);
 
     // Auto / Code / Plan mode
-    const loop = new AgentLoop({
+    this.activeLoop = new AgentLoop({
       provider: this.provider,
       toolRegistry: this.toolRegistry,
       analyzer: this.analyzer,
       planningEngine: this.planning,
       sessionStore: this.sessionStore,
+      checkpointManager: this.checkpointManager,
+      skillManager: this.skillManager,
       options: {
         maxIterations: this.configManager.get('maxIterations', 25),
         mode: this.mode,
@@ -154,7 +168,53 @@ class Orchestrator {
       }
     });
 
-    return loop.run(task);
+    try {
+      return await this.activeLoop.run(task);
+    } finally {
+      this.activeLoop = null;
+    }
+  }
+
+  async resumeTask(sessionId = null) {
+    let checkpoint = null;
+    if (sessionId) {
+      checkpoint = this.checkpointManager.getCheckpoint(sessionId);
+    } else {
+      checkpoint = this.checkpointManager.getLatestInterruptedSession();
+    }
+
+    if (!checkpoint) {
+      throw new Error(sessionId ? `No checkpoint found for session '${sessionId}'` : 'No interrupted session found to resume.');
+    }
+
+    // Restore or create session in sessionStore
+    try {
+      this.sessionStore.loadSession(checkpoint.sessionId);
+    } catch {
+      this.sessionStore.createSession(checkpoint.task);
+      this.sessionStore.currentSession.id = checkpoint.sessionId;
+    }
+
+    this.activeLoop = new AgentLoop({
+      provider: this.provider,
+      toolRegistry: this.toolRegistry,
+      analyzer: this.analyzer,
+      planningEngine: this.planning,
+      sessionStore: this.sessionStore,
+      checkpointManager: this.checkpointManager,
+      skillManager: this.skillManager,
+      options: {
+        maxIterations: this.configManager.get('maxIterations', 25),
+        mode: checkpoint.mode || this.mode,
+        ...this.callbacks
+      }
+    });
+
+    try {
+      return await this.activeLoop.resume(checkpoint);
+    } finally {
+      this.activeLoop = null;
+    }
   }
 
   async runAskMode(question) {

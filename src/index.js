@@ -22,6 +22,8 @@ const PathGuard = require('./security/path-guard');
 const { PermissionManager, PERMISSION_LEVELS } = require('./security/permissions');
 const { maskSecrets } = require('./security/secret-guard');
 const SessionStore = require('./memory/session-store');
+const CheckpointManager = require('./memory/checkpoint-manager');
+const SkillManager = require('./skills/skill-manager');
 const { getPlatformInfo } = require('./terminal/platform');
 const { createDiff } = require('./utils/diff');
 
@@ -49,6 +51,8 @@ module.exports = {
   PERMISSION_LEVELS,
   maskSecrets,
   SessionStore,
+  CheckpointManager,
+  SkillManager,
   getPlatformInfo,
   createDiff
 };

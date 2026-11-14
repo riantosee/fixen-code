@@ -9,6 +9,8 @@ const GitManager = require('../git/git-manager');
 const ProviderFactory = require('../providers/provider-factory');
 const Orchestrator = require('../core/orchestrator');
 const ProjectScanner = require('../intelligence/project-scanner');
+const SkillManager = require('../skills/skill-manager');
+const CheckpointManager = require('../memory/checkpoint-manager');
 const UI = require('./ui');
 
 class Commands {
@@ -186,6 +188,79 @@ class Commands {
     console.log(colors.bold(`\n🧐 Code Quality & Security Review\n`));
     const result = await orchestrator.runTask(target || 'Review entire project');
     console.log('\n' + result.summary + '\n');
+  }
+
+  static async resume(sessionId = null, workspace = process.cwd()) {
+    const orchestrator = new Orchestrator({
+      workspace,
+      diffPreviewHandler: UI.confirmDiff.bind(UI),
+      commandApprovalHandler: UI.confirmCommand.bind(UI),
+      onStatus: (step, desc) => {
+        console.log(`${colors.cyan('▸')} ${colors.bold(step)}: ${desc}`);
+      },
+      onToolStart: (tool, toolArgs) => {
+        console.log(`  ${colors.dim('⚙')} ${colors.cyan(tool)} ${colors.gray(JSON.stringify(toolArgs).slice(0, 100))}`);
+      },
+      onToolEnd: (tool, res) => {
+        if (res.success) {
+          console.log(`  ${colors.green('✓')} ${colors.gray(tool + ' completed')}`);
+        } else {
+          console.log(`  ${colors.red('✗')} ${colors.red(tool + ' failed: ' + res.error)}`);
+        }
+      }
+    });
+
+    console.log(colors.bold(`\n🔄 Resuming interrupted session...\n`));
+    const result = await orchestrator.resumeTask(sessionId);
+
+    console.log(colors.bold('\n--- Execution Summary ---'));
+    console.log(result.summary || 'Resumed task completed successfully.');
+    if (result.modifiedFiles && result.modifiedFiles.length > 0) {
+      console.log(colors.cyan('\nModified files:'));
+      for (const f of result.modifiedFiles) {
+        console.log(`  - ${f}`);
+      }
+    }
+  }
+
+  static async skills(args = [], workspace = process.cwd()) {
+    const sm = new SkillManager(workspace);
+    const sub = args[0];
+
+    if (!sub || sub === 'list') {
+      const list = sm.listSkills();
+      console.log(colors.bold('\nFIXEN CODE Installed Skills:\n'));
+      if (list.length === 0) {
+        console.log(colors.gray('No skills currently installed in skills/ or .fixen/skills/'));
+        return;
+      }
+
+      for (const s of list) {
+        const marker = s.enabled ? colors.green('● ACTIVE') : colors.gray('○ DISABLED');
+        console.log(`${marker} ${colors.bold(s.name)}`);
+        if (s.description) {
+          console.log(`   ${colors.dim(s.description)}`);
+        }
+        console.log(`   ${colors.gray('Path: ' + s.path)}\n`);
+      }
+      return;
+    }
+
+    if (sub === 'info') {
+      const name = args[1];
+      if (!name) {
+        console.log(colors.error('Usage: fixen skills info <skill-name>'));
+        return;
+      }
+      const skill = sm.getSkill(name);
+      if (!skill) {
+        console.log(colors.error(`Skill '${name}' not found.`));
+        return;
+      }
+      console.log(colors.bold(`\nSkill: ${skill.name}`));
+      if (skill.description) console.log(colors.italic(skill.description) + '\n');
+      console.log(skill.instructions);
+    }
   }
 }
 

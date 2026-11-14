@@ -65,6 +65,8 @@ class Repl {
     console.log(`  ${colors.cyan('/review')}     - Switch to Review Mode (security & code quality review)`);
     console.log(`  ${colors.cyan('/workspace')}  - View project structure & file tree`);
     console.log(`  ${colors.cyan('/status')}     - Show repository status & active settings`);
+    console.log(`  ${colors.cyan('/skills')}     - Show active engineering skills`);
+    console.log(`  ${colors.cyan('/resume')}     - Resume last interrupted session`);
     console.log(`  ${colors.cyan('/diff')}       - View uncommitted git changes`);
     console.log(`  ${colors.cyan('/undo')}       - Revert modifications made in the current session`);
     console.log(`  ${colors.cyan('/clear')}      - Clear screen`);
@@ -122,6 +124,24 @@ class Repl {
         const diffRes = this.git.diff();
         console.log(colors.bold('\nGit Diff:'));
         console.log(diffRes.diff || 'No uncommitted changes.\n');
+        return true;
+      case '/skills':
+        const skills = this.orchestrator.skillManager.listSkills();
+        console.log(colors.bold('\nActive Engineering Skills:'));
+        for (const s of skills) {
+          console.log(`  ${s.enabled ? colors.green('●') : colors.gray('○')} ${colors.bold(s.name)}: ${s.description || 'No description'}`);
+        }
+        console.log('');
+        return true;
+      case '/resume':
+        try {
+          console.log(colors.cyan('\nResuming previous session...'));
+          const resumeResult = await this.orchestrator.resumeTask(arg || null);
+          console.log(colors.bold('\n--- Resumed Execution Summary ---'));
+          console.log(resumeResult.summary || 'Task completed.');
+        } catch (err) {
+          console.log(colors.error(err.message));
+        }
         return true;
       case '/undo':
         const undoRes = this.orchestrator.sessionStore.undoLastModifications();
