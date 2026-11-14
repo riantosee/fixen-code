@@ -6,11 +6,11 @@ class GroqProvider extends BaseProvider {
   constructor(config = {}) {
     super('groq', {
       endpoint: 'https://api.groq.com/openai/v1',
-      defaultModel: 'llama-3.3-70b-versatile',
+      defaultModel: 'qwen/qwen3.8-27b',
       ...config
     });
     this.endpoint = this.config.endpoint || 'https://api.groq.com/openai/v1';
-    this.model = this.config.model || this.config.defaultModel || 'llama-3.3-70b-versatile';
+    this.model = this.config.model || this.config.defaultModel || 'qwen/qwen3.8-27b';
     this.apiKey = this.config.apiKey || process.env.GROQ_API_KEY;
   }
 
@@ -95,7 +95,26 @@ class GroqProvider extends BaseProvider {
             parsedMsg = json.error ? (json.error.message || json.error) : errBody;
           } catch {}
 
+          // Handle 404 model decommissioned or not found -> auto fallback
+          if (response.status === 404 || /model_not_found|model_decommissioned|does not exist/i.test(parsedMsg)) {
+            if (this.model !== 'qwen/qwen3.8-27b') {
+              console.log(`\n  \x1b[33m[Fixen Auto-Recovery]\x1b[0m Model '${this.model}' is unavailable on Groq. Auto-switching to 'qwen/qwen3.8-27b'...`);
+              this.model = 'qwen/qwen3.8-27b';
+              payload.model = this.model;
+              continue;
+            }
+          }
+
           // Handle 429 rate limit or 5xx temporary server error
+          if (response.status === 404 || /model_not_found|model_decommissioned|does not exist/i.test(parsedMsg)) {
+            if (this.model !== 'qwen/qwen3.8-27b') {
+              console.log(`\n  \x1b[33m[Fixen Auto-Recovery]\x1b[0m Model '${this.model}' is unavailable on Groq. Auto-switching to 'qwen/qwen3.8-27b'...`);
+              this.model = 'qwen/qwen3.8-27b';
+              payload.model = this.model;
+              continue;
+            }
+          }
+
           if ((response.status === 429 || response.status >= 500) && attempt <= this.maxRetries) {
             const retryAfterHeader = response.headers.get('retry-after');
             const waitMs = retryAfterHeader ? parseInt(retryAfterHeader, 10) * 1000 : Math.min(1000 * Math.pow(2, attempt), 10000);
@@ -140,7 +159,9 @@ class GroqProvider extends BaseProvider {
     throw lastError || new Error('Failed to communicate with Groq API');
   }
 
-  async chatStream({ messages, tools = null, temperature = 0.2, maxTokens = 4096, onToken = () => {} }) {
+  async chatStream(options = {}, onTokenArg = null) {
+    const { messages, tools = null, temperature = 0.2, maxTokens = 4096 } = options;
+    const onToken = onTokenArg || options.onToken || (() => {});
     if (!this.apiKey) {
       throw new Error('Groq API Key is missing. Export GROQ_API_KEY or configure via "fixen config".');
     }
@@ -184,6 +205,15 @@ class GroqProvider extends BaseProvider {
           const errBody = await response.text();
           let parsedMsg = errBody;
           try { const json = JSON.parse(errBody); parsedMsg = json.error ? (json.error.message || json.error) : errBody; } catch {}
+
+          if (response.status === 404 || /model_not_found|model_decommissioned|does not exist/i.test(parsedMsg)) {
+            if (this.model !== 'qwen/qwen3.8-27b') {
+              console.log(`\n  \x1b[33m[Fixen Auto-Recovery]\x1b[0m Model '${this.model}' is unavailable on Groq. Auto-switching to 'qwen/qwen3.8-27b'...`);
+              this.model = 'qwen/qwen3.8-27b';
+              payload.model = this.model;
+              continue;
+            }
+          }
 
           if ((response.status === 429 || response.status >= 500) && attempt <= this.maxRetries) {
             const retryAfterHeader = response.headers.get('retry-after');

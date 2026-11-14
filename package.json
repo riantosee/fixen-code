@@ -1,6 +1,6 @@
 {
   "name": "fixen-code",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Autonomous AI software engineering agent. Build Anything. Fix Everything.",
   "main": "src/index.js",
   "bin": {

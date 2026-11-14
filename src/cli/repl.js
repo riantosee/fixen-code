@@ -282,7 +282,8 @@ class Repl {
       if (onToken && typeof this.orchestrator.provider.chatStream === 'function') {
         await this.orchestrator.provider.chatStream({
           messages: [{ role: 'user', content: chatPrompt }],
-          temperature: 0.7
+          temperature: 0.7,
+          onToken
         }, onToken);
         process.stdout.write('\n\n');
       } else {
@@ -293,7 +294,8 @@ class Repl {
         console.log('\n  ' + res.content.trim() + '\n');
       }
     } catch (err) {
-      console.log('\n  ' + colors.gray('(Chat unavailable — type a coding task to get started)') + '\n');
+      console.log('\n  ' + colors.red(`Provider Error: ${err.message}`));
+      console.log('  ' + colors.gray('Tip: Run /setup to configure a working provider or model.\n'));
     }
   }
 }

@@ -37,7 +37,7 @@ class SetupWizard {
 
     // Step 1: Provider selection
     console.log(colors.bold('Step 1/3: Select Primary AI Provider'));
-    console.log(`  ${colors.cyan('1)')} Groq               ${colors.gray('(Recommended: Ultra-fast, Free Tier available — Llama 3.3 70B)')}`);
+    console.log(`  ${colors.cyan('1)')} Groq               ${colors.gray('(Recommended: Ultra-fast, Free Tier available — Qwen 27B / GPT-OSS)')}`);
     console.log(`  ${colors.cyan('2)')} DeepSeek           ${colors.gray('(High coding & reasoning intelligence — DeepSeek V3 / R1)')}`);
     console.log(`  ${colors.cyan('3)')} OpenRouter         ${colors.gray('(All-in-One: Access 200+ models — Claude, GPT-4o, Llama)')}`);
     console.log(`  ${colors.cyan('4)')} OpenAI             ${colors.gray('(Industry standard — GPT-4o, o3-mini)')}`);
@@ -50,7 +50,7 @@ class SetupWizard {
     const choice = await this.ask(rl, `${colors.yellow('Select provider [1-8] (default: 1): ')}`) || '1';
 
     let selectedProvider = 'groq';
-    let defaultModel = 'llama-3.3-70b-versatile';
+    let defaultModel = 'qwen/qwen3.8-27b';
     let endpoint = null;
     let apiKeyPrompt = '';
     let keyUrlHint = '';
@@ -102,7 +102,7 @@ class SetupWizard {
       case '1':
       default:
         selectedProvider = 'groq';
-        defaultModel = 'llama-3.3-70b-versatile';
+        defaultModel = 'qwen/qwen3.8-27b';
         apiKeyPrompt = 'Enter your Groq API Key (or press Enter to set later): ';
         keyUrlHint = 'Get a free key at: https://console.groq.com/keys';
         break;
