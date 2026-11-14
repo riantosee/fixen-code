@@ -11,6 +11,8 @@ const Orchestrator = require('../core/orchestrator');
 const ProjectScanner = require('../intelligence/project-scanner');
 const SkillManager = require('../skills/skill-manager');
 const CheckpointManager = require('../memory/checkpoint-manager');
+const UpdateNotifier = require('../utils/update-notifier');
+const { execSync } = require('child_process');
 const UI = require('./ui');
 
 class Commands {
@@ -260,6 +262,34 @@ class Commands {
       console.log(colors.bold(`\nSkill: ${skill.name}`));
       if (skill.description) console.log(colors.italic(skill.description) + '\n');
       console.log(skill.instructions);
+    }
+  }
+
+  static async upgrade(currentVersion) {
+    console.log(colors.bold('\n🔍 Checking for FIXEN CODE updates on npm...\n'));
+    const notifier = new UpdateNotifier(currentVersion);
+    const updateInfo = await notifier.check();
+
+    if (!updateInfo || !updateInfo.hasUpdate) {
+      console.log(colors.success(`You are already running the latest version of FIXEN CODE (${colors.cyan('v' + currentVersion)})`));
+      return;
+    }
+
+    process.stdout.write(notifier.renderAlert(updateInfo));
+
+    const confirmed = await UI.confirm(`Would you like to run '${updateInfo.updateCommand}' now?`, true);
+    if (!confirmed) {
+      console.log(colors.dim('Upgrade cancelled.'));
+      return;
+    }
+
+    console.log(colors.cyan(`\nRunning ${updateInfo.updateCommand} ...\n`));
+    try {
+      execSync(updateInfo.updateCommand, { stdio: 'inherit' });
+      console.log(colors.success(`\n✔ Successfully upgraded FIXEN CODE to v${updateInfo.latest}!`));
+    } catch (err) {
+      console.log(colors.error(`\nUpgrade failed: ${err.message}`));
+      console.log(colors.dim(`Try running manually: ${updateInfo.updateCommand}`));
     }
   }
 }

@@ -8,6 +8,9 @@ const Commands = require('../src/cli/commands');
 const Repl = require('../src/cli/repl');
 const Orchestrator = require('../src/core/orchestrator');
 const CheckpointManager = require('../src/memory/checkpoint-manager');
+const ConfigManager = require('../src/config/config-manager');
+const UpdateNotifier = require('../src/utils/update-notifier');
+const { renderSummaryCard } = require('../src/cli/summary-card');
 const UI = require('../src/cli/ui');
 const pkg = require('../package.json');
 
@@ -31,6 +34,11 @@ process.on('SIGTERM', () => {
 
 async function main() {
   const args = process.argv.slice(2);
+  const configManager = new ConfigManager(process.cwd());
+
+  // Check for updates in non-blocking way
+  const notifier = new UpdateNotifier(pkg.version);
+  const updatePromise = notifier.check();
 
   // Flags check
   if (args.includes('--version') || args.includes('-v')) {
@@ -39,13 +47,14 @@ async function main() {
   }
 
   if (args.includes('--help') || args.includes('-h')) {
-    printBanner(pkg.version);
+    printBanner(pkg.version, configManager.config);
     console.log(`
 Usage:
   fixen                          Start interactive REPL
   fixen "task description"       Run an autonomous task directly
   fixen resume [sessionId]       Resume an interrupted/crashed session
-  fixen skills [list|info]       List or view engineering skills
+  fixen upgrade                  Check for new updates from npm and upgrade
+  fixen skills [list|info]       List or inspect engineering skills
   fixen chat                     Start interactive REPL
   fixen plan "task description"  Generate an implementation plan only
   fixen review [path]            Run code quality & security review
@@ -83,9 +92,13 @@ Options:
     return Commands.skills(args.slice(1), process.cwd());
   }
 
+  if (firstArg === 'upgrade' || firstArg === 'update') {
+    return Commands.upgrade(pkg.version);
+  }
+
   if (firstArg === 'resume') {
     const sessionId = args[1] || null;
-    printBanner(pkg.version);
+    printBanner(pkg.version, configManager.config);
     return Commands.resume(sessionId, process.cwd());
   }
 
@@ -99,18 +112,26 @@ Options:
       console.log(colors.error('Please specify a task to plan: fixen plan "your task"'));
       process.exit(1);
     }
-    printBanner(pkg.version);
+    printBanner(pkg.version, configManager.config);
     return Commands.runPlan(task, process.cwd());
   }
 
   if (firstArg === 'review') {
     const target = args.slice(1).join(' ');
-    printBanner(pkg.version);
+    printBanner(pkg.version, configManager.config);
     return Commands.runReview(target, process.cwd());
   }
 
   // Interactive REPL or direct task execution
-  printBanner(pkg.version);
+  printBanner(pkg.version, configManager.config);
+
+  // Check update notice
+  try {
+    const updateInfo = await updatePromise;
+    if (updateInfo && updateInfo.hasUpdate) {
+      process.stdout.write(notifier.renderAlert(updateInfo));
+    }
+  } catch {}
 
   // Check for interrupted session before starting fresh
   const checkpointManager = new CheckpointManager(process.cwd());
@@ -148,7 +169,7 @@ Options:
     },
     onToolEnd: (tool, res) => {
       if (res.success) {
-        console.log(`  ${colors.green('✓')} ${colors.gray(tool + ' completed')}`);
+        console.log(`  ${colors.green('✔')} ${colors.gray(tool + ' completed')}`);
       } else {
         console.log(`  ${colors.red('✗')} ${colors.red(tool + ' failed: ' + res.error)}`);
       }
@@ -158,16 +179,15 @@ Options:
   activeOrchestrator = orchestrator;
 
   console.log(colors.bold(`\nTask: "${task}"\n`));
+  const startTime = Date.now();
   const result = await orchestrator.runTask(task);
+  const durationMs = Date.now() - startTime;
 
-  console.log(colors.bold('\n--- Execution Summary ---'));
-  console.log(result.summary || 'Task completed.');
-  if (result.modifiedFiles && result.modifiedFiles.length > 0) {
-    console.log(colors.cyan('\nModified files:'));
-    for (const f of result.modifiedFiles) {
-      console.log(`  - ${f}`);
-    }
-  }
+  console.log('\n' + renderSummaryCard(result, {
+    durationMs,
+    maxIterations: configManager.get('maxIterations', 25),
+    usageStats: orchestrator.provider.getUsageStats()
+  }) + '\n');
 }
 
 main().catch((err) => {

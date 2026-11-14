@@ -5,6 +5,9 @@ const colors = require('./colors');
 const Orchestrator = require('../core/orchestrator');
 const GitManager = require('../git/git-manager');
 const ProjectScanner = require('../intelligence/project-scanner');
+const { renderSummaryCard } = require('./summary-card');
+const Commands = require('./commands');
+const pkg = require('../../package.json');
 const UI = require('./ui');
 
 class Repl {
@@ -67,6 +70,7 @@ class Repl {
     console.log(`  ${colors.cyan('/status')}     - Show repository status & active settings`);
     console.log(`  ${colors.cyan('/skills')}     - Show active engineering skills`);
     console.log(`  ${colors.cyan('/resume')}     - Resume last interrupted session`);
+    console.log(`  ${colors.cyan('/upgrade')}    - Check and upgrade to latest version from npm`);
     console.log(`  ${colors.cyan('/diff')}       - View uncommitted git changes`);
     console.log(`  ${colors.cyan('/undo')}       - Revert modifications made in the current session`);
     console.log(`  ${colors.cyan('/clear')}      - Clear screen`);
@@ -133,6 +137,10 @@ class Repl {
         }
         console.log('');
         return true;
+      case '/upgrade':
+      case '/update':
+        await Commands.upgrade(pkg.version);
+        return true;
       case '/resume':
         try {
           console.log(colors.cyan('\nResuming previous session...'));
@@ -194,16 +202,15 @@ class Repl {
           await this.handleSlashCommand(trimmed);
         } else {
           console.log('');
+          const startTime = Date.now();
           const result = await this.orchestrator.runTask(trimmed);
-          console.log('\n' + colors.bold('--- Result ---'));
-          console.log(result.summary || 'Task completed.');
-          if (result.modifiedFiles && result.modifiedFiles.length > 0) {
-            console.log(colors.cyan('\nModified files:'));
-            for (const f of result.modifiedFiles) {
-              console.log(`  - ${f}`);
-            }
-          }
-          console.log('');
+          const durationMs = Date.now() - startTime;
+
+          console.log('\n' + renderSummaryCard(result, {
+            durationMs,
+            maxIterations: this.orchestrator.configManager.get('maxIterations', 25),
+            usageStats: this.orchestrator.provider.getUsageStats()
+          }) + '\n');
         }
       } catch (err) {
         console.log(colors.error(`\nError: ${err.message}\n`));

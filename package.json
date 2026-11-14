@@ -6,10 +6,20 @@
   "bin": {
     "fixen": "./bin/fixen.js"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "config/",
+    "skills/",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "start": "node bin/fixen.js",
     "test": "node tests/runner.js",
-    "doctor": "node bin/fixen.js doctor"
+    "doctor": "node bin/fixen.js doctor",
+    "prepublishOnly": "node tests/runner.js"
   },
   "keywords": [
     "ai",
@@ -19,10 +29,22 @@
     "cli",
     "groq",
     "llm",
-    "fixen"
+    "fixen",
+    "developer-tools"
   ],
   "author": "FIXEN CODE Team",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fixen-code/fixen-code.git"
+  },
+  "homepage": "https://github.com/fixen-code/fixen-code#readme",
+  "bugs": {
+    "url": "https://github.com/fixen-code/fixen-code/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18.0.0"
   },

@@ -8,7 +8,23 @@ function run() {
   const sm = new SkillManager(path.resolve(__dirname, '..'));
 
   const skills = sm.listSkills();
-  assert.ok(skills.length >= 2, 'Should have at least ponytail and deep-debugger skills installed');
+  assert.ok(skills.length >= 7, 'Should have all 7 engineering skills installed');
+
+  const expectedSkills = [
+    'ponytail',
+    'deep-debugger',
+    'motion-design',
+    'security-auditor',
+    'test-driven-architect',
+    'refactoring-master',
+    'api-designer'
+  ];
+
+  for (const name of expectedSkills) {
+    const s = sm.getSkill(name);
+    assert.ok(s !== null, `Skill '${name}' must be loaded`);
+    assert.ok(s.instructions.length > 50, `Skill '${name}' must have detailed instructions`);
+  }
 
   const ponytail = sm.getSkill('ponytail');
   assert.ok(ponytail !== null, 'Ponytail skill must be loaded');

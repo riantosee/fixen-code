@@ -20,6 +20,8 @@ async function runAllTests() {
     'checkpoint.test.js',
     'skills.test.js',
     'resume.test.js',
+    'update-notifier.test.js',
+    'ui-box.test.js',
     'agent-loop.test.js',
     'integration.test.js'
   ];
