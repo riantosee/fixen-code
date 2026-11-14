@@ -1,0 +1,88 @@
+{
+  "provider": "groq",
+  "model": "llama-3.3-70b-versatile",
+  "permissionLevel": 4,
+  "maxIterations": 25,
+  "toolTimeoutMs": 30000,
+  "llmTimeoutMs": 60000,
+  "maxContextTokens": 32768,
+  "mode": "auto",
+  "providers": {
+    "groq": {
+      "endpoint": "https://api.groq.com/openai/v1",
+      "defaultModel": "llama-3.3-70b-versatile",
+      "models": [
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+        "llama3-70b-8192",
+        "mixtral-8x7b-32768",
+        "gemma2-9b-it"
+      ],
+      "apiKeyEnv": "GROQ_API_KEY"
+    },
+    "openai": {
+      "endpoint": "https://api.openai.com/v1",
+      "defaultModel": "gpt-4o",
+      "models": [
+        "gpt-4o",
+        "gpt-4o-mini",
+        "o1-mini"
+      ],
+      "apiKeyEnv": "OPENAI_API_KEY"
+    },
+    "gemini": {
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "defaultModel": "gemini-1.5-pro",
+      "models": [
+        "gemini-1.5-pro",
+        "gemini-1.5-flash",
+        "gemini-2.0-flash-exp"
+      ],
+      "apiKeyEnv": "GEMINI_API_KEY"
+    },
+    "ollama": {
+      "endpoint": "http://127.0.0.1:11434/v1",
+      "defaultModel": "llama3.2",
+      "models": [
+        "llama3.2",
+        "qwen2.5-coder",
+        "deepseek-coder-v2"
+      ],
+      "apiKeyEnv": ""
+    }
+  },
+  "security": {
+    "protectedPatterns": [
+      ".git/**",
+      ".env*",
+      "**/*.pem",
+      "**/*.key",
+      "**/id_rsa*",
+      "**/credentials.json",
+      "**/service-account*.json"
+    ],
+    "dangerousCommandPatterns": [
+      "rm\\s+-rf\\s+/",
+      "rmdir\\s+/s\\s+/q\\s+C:\\\\",
+      "format\\s+[a-zA-Z]:",
+      "dd\\s+if=",
+      ":\\(\\)\\s*\\{\\s*:\\|:&\\s*\\};:",
+      "mkfs",
+      "chmod\\s+-R\\s+777\\s+/",
+      "curl.*\\|.*bash",
+      "wget.*\\|.*bash"
+    ]
+  },
+  "ignorePatterns": [
+    "node_modules",
+    ".git",
+    "dist",
+    "build",
+    ".next",
+    "vendor",
+    ".cache",
+    ".fixen",
+    ".DS_Store",
+    "coverage"
+  ]
+}

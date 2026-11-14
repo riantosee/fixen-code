@@ -1,0 +1,31 @@
+{
+  "name": "fixen-code",
+  "version": "0.1.0",
+  "description": "Autonomous AI software engineering agent. Build Anything. Fix Everything.",
+  "main": "src/index.js",
+  "bin": {
+    "fixen": "./bin/fixen.js"
+  },
+  "scripts": {
+    "start": "node bin/fixen.js",
+    "test": "node tests/runner.js",
+    "doctor": "node bin/fixen.js doctor"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "autonomous",
+    "coding",
+    "cli",
+    "groq",
+    "llm",
+    "fixen"
+  ],
+  "author": "FIXEN CODE Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

@@ -1,0 +1,6 @@
+{
+  "provider": "groq",
+  "model": "llama-3.3-70b-versatile",
+  "permissionLevel": 4,
+  "initializedAt": "2026-11-14T14:25:01.945Z"
+}
