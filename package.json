@@ -36,11 +36,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fixen-code/fixen-code.git"
+    "url": "git+https://github.com/riantosee/fixen-code.git"
   },
-  "homepage": "https://github.com/fixen-code/fixen-code#readme",
+  "homepage": "https://github.com/riantosee/fixen-code#readme",
   "bugs": {
-    "url": "https://github.com/fixen-code/fixen-code/issues"
+    "url": "https://github.com/riantosee/fixen-code/issues"
   },
   "publishConfig": {
     "access": "public"

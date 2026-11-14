@@ -16,6 +16,9 @@
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-success.svg)](package.json)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Termux-blueviolet.svg)](#cross-platform-support)
+[![Website](https://img.shields.io/badge/Website-Landing%20Page-cyan.svg)](https://riantosee.github.io/fixen-code/)
+
+**[🌐 Live Landing Page & Interactive Demo →](https://riantosee.github.io/fixen-code/)**
 
 **FIXEN CODE** is an autonomous AI software engineering agent designed for modern developers. It doesn't just chat about code—it **reads and understands your whole codebase, creates milestone plans, writes and edits files safely, executes terminal commands, runs tests, fixes errors, and verifies its work before claiming completion.**
 
@@ -141,7 +144,7 @@ npm install -g fixen-code
 ### From Source (For Contributors)
 
 ```bash
-git clone https://github.com/fixen-code/fixen-code.git
+git clone https://github.com/riantosee/fixen-code.git
 cd fixen-code
 npm link
 ```
