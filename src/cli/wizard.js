@@ -2,7 +2,7 @@
 
 const readline = require('readline');
 const colors = require('./colors');
-const { renderBox } = require('./box');
+const { createBox: renderBox } = require('./box');
 const SkillManager = require('../skills/skill-manager');
 
 class SetupWizard {
@@ -185,3 +185,4 @@ class SetupWizard {
 }
 
 module.exports = SetupWizard;
+
