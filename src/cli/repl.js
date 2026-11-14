@@ -7,18 +7,31 @@ const GitManager = require('../git/git-manager');
 const ProjectScanner = require('../intelligence/project-scanner');
 const { renderSummaryCard } = require('./summary-card');
 const Commands = require('./commands');
+const StreamRenderer = require('./stream-renderer');
 const pkg = require('../../package.json');
 const UI = require('./ui');
 
 class Repl {
   constructor(workspace = process.cwd()) {
     this.workspace = workspace;
+    this._streamRenderer = null;
     this.orchestrator = new Orchestrator({
       workspace: this.workspace,
       diffPreviewHandler: UI.confirmDiff.bind(UI),
       commandApprovalHandler: UI.confirmCommand.bind(UI),
       onStatus: (step, desc) => {
+        if (this._streamRenderer && this._streamRenderer.isStreaming) {
+          this._streamRenderer.end();
+          this._streamRenderer = null;
+        }
         console.log(`${colors.cyan('▸')} ${colors.bold(step)}: ${desc}`);
+      },
+      onToken: (token) => {
+        if (!this._streamRenderer) {
+          this._streamRenderer = new StreamRenderer({ linePrefix: '  ' });
+          this._streamRenderer.start();
+        }
+        this._streamRenderer.onToken(token);
       },
       onToolStart: (tool, args) => {
         console.log(`  ${colors.dim('⚙')} ${colors.cyan(tool)} ${colors.gray(JSON.stringify(args).slice(0, 120))}`);

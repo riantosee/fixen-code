@@ -30,7 +30,8 @@ class AgentLoop {
       onToolStart: options.onToolStart || (() => {}),
       onToolEnd: options.onToolEnd || (() => {}),
       onMessage: options.onMessage || (() => {}),
-      onPlan: options.onPlan || (() => {})
+      onPlan: options.onPlan || (() => {}),
+      onToken: options.onToken || null
     };
 
     this.cancelled = false;
@@ -253,11 +254,18 @@ class AgentLoop {
 
       let response;
       try {
-        response = await this.provider.chat({
+        const chatParams = {
           messages: context.getMessagesForProvider(),
           tools: toolSchemas,
           temperature: 0.1
-        });
+        };
+
+        if (this.callbacks.onToken && typeof this.provider.chatStream === 'function') {
+          chatParams.onToken = this.callbacks.onToken;
+          response = await this.provider.chatStream(chatParams);
+        } else {
+          response = await this.provider.chat(chatParams);
+        }
       } catch (err) {
         this.callbacks.onStatus('PROVIDER_ERROR', err.message);
         if (this.checkpointManager && this.session) {

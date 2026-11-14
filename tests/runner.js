@@ -23,7 +23,11 @@ async function runAllTests() {
     'update-notifier.test.js',
     'ui-box.test.js',
     'agent-loop.test.js',
-    'integration.test.js'
+    'integration.test.js',
+    'stream-renderer.test.js',
+    'file-transaction.test.js',
+    'git-branching.test.js',
+    'streaming-provider.test.js'
   ];
 
   let passed = 0;

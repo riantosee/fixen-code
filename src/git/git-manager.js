@@ -115,6 +115,68 @@ class GitManager {
     const res = this.execGit(`restore --staged --worktree ${file}`);
     return res.success;
   }
+
+  createBranchCheckpoint(taskDescription = 'checkpoint') {
+    if (!this.isRepo) return null;
+    const timestamp = Date.now();
+    const branchRes = this.execGit('branch --show-current');
+    const originalBranch = branchRes.output || 'main';
+    const safeName = taskDescription.replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 40);
+    const branchName = `fixen/checkpoint-${timestamp}-${safeName}`;
+
+    // Stage all changes
+    this.execGit('add -A');
+
+    // Check if there's anything to commit
+    const statusRes = this.execGit('status --porcelain');
+    if (!statusRes.output) {
+      return { branch: branchName, commitHash: null, originalBranch, timestamp, message: 'No changes to checkpoint' };
+    }
+
+    // Create orphan-like checkpoint: branch, commit, switch back
+    const createRes = this.execGit(`checkout -b "${branchName}"`);
+    if (!createRes.success) return null;
+
+    const commitRes = this.execGit(`commit -m "fixen checkpoint: ${taskDescription}"`);
+    const commitHash = commitRes.success ? this.execGit('rev-parse HEAD').output : null;
+
+    // Return to original branch
+    this.execGit(`checkout "${originalBranch}"`);
+
+    return { branch: branchName, commitHash, originalBranch, timestamp };
+  }
+
+  restoreBranchCheckpoint(checkpointBranch) {
+    if (!this.isRepo) return { success: false, error: 'Not a git repo' };
+    const res = this.execGit(`checkout "${checkpointBranch}"`);
+    return { success: res.success, error: res.error };
+  }
+
+  listCheckpointBranches() {
+    if (!this.isRepo) return [];
+    const res = this.execGit('branch --list "fixen/checkpoint-*"');
+    if (!res.success || !res.output) return [];
+
+    return res.output.split('\n').map(line => {
+      const branch = line.replace(/^\*?\s+/, '').trim();
+      const match = branch.match(/checkpoint-(\d+)/);
+      return { branch, timestamp: match ? parseInt(match[1], 10) : 0 };
+    }).filter(b => b.branch);
+  }
+
+  cleanupCheckpointBranches(olderThanMs = 7 * 24 * 60 * 60 * 1000) {
+    const branches = this.listCheckpointBranches();
+    const cutoff = Date.now() - olderThanMs;
+    let deleted = 0;
+
+    for (const { branch, timestamp } of branches) {
+      if (timestamp && timestamp < cutoff) {
+        const res = this.execGit(`branch -D "${branch}"`);
+        if (res.success) deleted++;
+      }
+    }
+    return deleted;
+  }
 }
 
 module.exports = GitManager;

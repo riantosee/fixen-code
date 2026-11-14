@@ -37,6 +37,15 @@ class BaseProvider {
     throw new Error(`chat() not implemented for ${this.name}`);
   }
 
+  async chatStream(params) {
+    // Default fallback: use non-streaming chat, emit full content as single token
+    const result = await this.chat(params);
+    if (params.onToken && result.content) {
+      params.onToken(result.content);
+    }
+    return result;
+  }
+
   async listModels() {
     return this.config.models || [];
   }

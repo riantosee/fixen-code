@@ -10,6 +10,7 @@ const Orchestrator = require('../src/core/orchestrator');
 const CheckpointManager = require('../src/memory/checkpoint-manager');
 const ConfigManager = require('../src/config/config-manager');
 const UpdateNotifier = require('../src/utils/update-notifier');
+const StreamRenderer = require('../src/cli/stream-renderer');
 const { renderSummaryCard } = require('../src/cli/summary-card');
 const UI = require('../src/cli/ui');
 const pkg = require('../package.json');
@@ -155,6 +156,8 @@ Options:
   const task = args.filter((a) => !a.startsWith('--')).join(' ');
   const fullAuto = args.includes('--full-auto');
 
+  let directStreamRenderer = null;
+
   const orchestrator = new Orchestrator({
     workspace: process.cwd(),
     mode: 'auto',
@@ -162,7 +165,18 @@ Options:
     diffPreviewHandler: UI.confirmDiff.bind(UI),
     commandApprovalHandler: UI.confirmCommand.bind(UI),
     onStatus: (step, desc) => {
+      if (directStreamRenderer && directStreamRenderer.isStreaming) {
+        directStreamRenderer.end();
+        directStreamRenderer = null;
+      }
       console.log(`${colors.cyan('▸')} ${colors.bold(step)}: ${desc}`);
+    },
+    onToken: (token) => {
+      if (!directStreamRenderer) {
+        directStreamRenderer = new StreamRenderer({ linePrefix: '  ' });
+        directStreamRenderer.start();
+      }
+      directStreamRenderer.onToken(token);
     },
     onToolStart: (tool, toolArgs) => {
       console.log(`  ${colors.dim('⚙')} ${colors.cyan(tool)} ${colors.gray(JSON.stringify(toolArgs).slice(0, 100))}`);

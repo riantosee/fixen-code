@@ -210,10 +210,15 @@ npm test
   - Git Manager & Session Undo.
   - Extensible Plugin System.
   - 100% Passing Test Suite.
-- [ ] **V0.2 — Advanced Reliability**
-  - Streaming LLM token responses in CLI.
-  - Enhanced multi-file semantic search.
-  - Git stash branching checkpoints.
+- [x] **V0.2 — Advanced Reliability, Streaming & Skills** *(Completed)*
+  - Real-time LLM token streaming with native SSE parser (`chatStream`).
+  - Real-time typing `StreamRenderer` in CLI and REPL.
+  - Atomic `FileTransaction` multi-file batch engine with automatic rollback on failure.
+  - Git Branching Checkpoints (`fixen/checkpoint-*`) with auto-cleanup.
+  - 7 Transferred Engineering Skills (`ponytail`, `deep-debugger`, `motion-design`, `security-auditor`, `test-driven-architect`, `refactoring-master`, `api-designer`).
+  - NPM Update Notifier (`fixen upgrade` / `/upgrade`) with 12h cache.
+  - 3x More Polished UI (Unicode box drawing, badges, execution summary cards, progress bars).
+  - 20/20 Test Suite passing.
 - [ ] **V0.3 — Engineering Automation**
   - Automated test generation and regression detection.
   - Auto-debugger workflows with stacktrace parsing.

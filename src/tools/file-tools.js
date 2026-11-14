@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const BaseTool = require('./base-tool');
+const FileTransaction = require('./file-transaction');
 const { createDiff } = require('../utils/diff');
 
 class FileTools {
@@ -12,6 +13,26 @@ class FileTools {
     this.workspace = pathGuard.getWorkspace();
     this.backupDir = path.join(this.workspace, '.fixen', 'backups');
     this.diffCallback = options.onDiffPreview || null;
+    this._transaction = null;
+  }
+
+  beginTransaction() {
+    this._transaction = new FileTransaction(this.pathGuard);
+    this._transaction.begin();
+    return this._transaction;
+  }
+
+  commitTransaction() {
+    if (!this._transaction) throw new Error('No active transaction');
+    const result = this._transaction.commit();
+    this._transaction = null;
+    return result;
+  }
+
+  rollbackTransaction() {
+    if (!this._transaction) return;
+    this._transaction.rollback();
+    this._transaction = null;
   }
 
   ensureBackupDir() {
