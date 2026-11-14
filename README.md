@@ -11,224 +11,323 @@
   Build Anything. Fix Everything.
 ```
 
-**FIXEN CODE** (`fixen-code`) is an autonomous AI software engineering agent for developers. Powered initially by **Groq** (with `llama-3.3-70b-versatile`) and OpenAI-compatible architectures, FIXEN CODE understands entire codebases, creates step-by-step implementation plans, modifies multiple files with unified diff previews, executes terminal commands safely, runs tests, fixes errors, and verifies its work before claiming completion.
+[![npm version](https://img.shields.io/npm/v/fixen-code.svg)](https://www.npmjs.com/package/fixen-code)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-success.svg)](package.json)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Termux-blueviolet.svg)](#cross-platform-support)
 
-Zero compiled dependencies. Pure Node.js CommonJS. Blazing fast startup across **Windows**, **Linux**, **macOS**, and **Android Termux**.
+**FIXEN CODE** is an autonomous AI software engineering agent designed for modern developers. It doesn't just chat about code—it **reads and understands your whole codebase, creates milestone plans, writes and edits files safely, executes terminal commands, runs tests, fixes errors, and verifies its work before claiming completion.**
 
----
-
-## 🌟 Key Highlights
-
-- **Real Autonomous Agent Loop**: Inspect workspace → Create plan → Select tool → Execute tool → Observe result → Reason → Verify implementation.
-- **Initial AI Provider: Groq**: Lightning-fast inference using `llama-3.3-70b-versatile`, with full tool calling, token usage tracking, and automatic retry with exponential backoff on rate limits.
-- **Multi-Provider Architecture**: Built-in support for **Groq**, **OpenAI**, **Google Gemini**, and local **Ollama**.
-- **Codebase Intelligence**: Recursive project scanning, language and framework detection, package manifest analysis, entry-point detection, and file tree generation.
-- **Safe File Operations**: Atomic writes (`.tmp` + rename), automatic file backups (`.fixen/backups/`) before overwrite/deletion, unified diff previews, and full `/undo` capability.
-- **Crash & Interruption Resilient**: Automatic atomic checkpointing at every step (`.fixen/checkpoints/`). If an agent process crashes, terminal closes, or network drops, FIXEN CODE detects the interrupted job on startup and seamlessly resumes from the exact point of interruption via `fixen resume`.
-- **Transferred Native Engineering Skills**: Pre-loaded with the **Ponytail (Lazy Senior Developer)** and **Deep Debugger** skills, enforcing shortest working diffs, strict YAGNI, platform-first implementations, and systematic root cause resolution.
-- **Enterprise-Grade Security & Permissions**:
-  - 5 Permission Levels (Read-Only to Full Auto).
-  - Path traversal and workspace boundary enforcement.
-  - Symlink escape validation.
-  - Dangerous shell command pattern detection (`rm -rf /`, `rmdir /s /q C:\`, etc.).
-  - Automatic API key and credential masking in logs and output.
-- **Cross-Platform First**:
-  - **Windows 10/11**: PowerShell and CMD support with accurate exit code forwarding.
-  - **Linux & macOS**: POSIX shell.
-  - **Android Termux**: Zero native C++ compilation addons, low memory footprint, compact screen adaptation.
+Built with **Zero External Dependencies** using pure Node.js CommonJS. It delivers blazing-fast startup times and runs identically across **Windows**, **macOS**, **Linux**, and **Android (Termux)**.
 
 ---
 
-## 🚀 Installation & Setup
+## 🎯 What FIXEN CODE Does
 
-### Requirements
-- Node.js `>= 18.0.0` (Node 20+ recommended)
-- Git (optional, recommended for version control)
+Unlike traditional chat assistants that dump code snippets for you to copy and paste, FIXEN CODE acts as an autonomous pair programmer directly inside your terminal:
 
-### 1. Global Installation / Linking
+1. **Scans & Understands**: Recursively indexes your project tree, reads package manifests, detects frameworks and languages, and builds an architectural mental model.
+2. **Plans First**: Breaks complex requests into logical milestones and presents a structured plan before modifying anything.
+3. **Acts Safely**: Edits files using atomic operations, shows unified diff previews, creates automatic backups, and supports instant `/undo`.
+4. **Executes & Observes**: Runs builds, linters, tests, and shell commands in your environment, capturing stdout and stderr.
+5. **Reasons & Recovers**: If a command or test fails, FIXEN CODE diagnoses the root cause, self-corrects the code, and tries again.
+6. **Verifies Work**: Never declares a task "done" without running existing tests or inspecting file integrity.
+7. **Survives Crashes**: Automatically saves state checkpoints at every iteration. If interrupted by `Ctrl+C` or a network drop, you can resume right where it left off with `fixen resume`.
+
+---
+
+## 🔄 The Autonomous Agent Loop
+
+```
+           ┌─────────────────────────────┐
+           │     User Task Request       │
+           └──────────────┬──────────────┘
+                          │
+                          ▼
+           ┌─────────────────────────────┐
+           │      Inspect Workspace      │  (Language, framework, directory scan)
+           └──────────────┬──────────────┘
+                          │
+                          ▼
+           ┌─────────────────────────────┐
+           │   Decompose & Create Plan   │  (Milestones & execution strategy)
+           └──────────────┬──────────────┘
+                          │
+         ┌────────────────┴────────────────┐
+         ▼                                 ▼
+   [Plan Mode]                        [Auto / Code Mode]
+   Outputs plan only                  Enters Execution Loop:
+                                           │
+                        ┌──────────────────┼──────────────────┐
+                        │                  │                  │
+                        ▼                  ▼                  ▼
+                   Select Tool        Execute Tool      Observe Result
+                 (File/Terminal)    (Atomic & Guarded)   (Stdout/Diffs)
+                        │                  │                  │
+                        └──────────────────┼──────────────────┘
+                                           │
+                                           ▼
+                                ┌─────────────────────┐
+                                │ Reason About Output │
+                                └──────────┬──────────┘
+                                           │
+                          ┌────────────────┴────────────────┐
+                          │ Need more work / Fix error?     │
+                          ├─────────────────┬───────────────┤
+                          │ YES             │ NO            │
+                          ▼                 ▼               │
+                    [Next Tool Call]   Verify Work          │
+                                       (Run Tests)          │
+                                            │               │
+                                            ▼               ▼
+                                    ┌─────────────────────────────┐
+                                    │     Final Summary Card      │
+                                    └─────────────────────────────┘
+```
+
+---
+
+## 🚀 Key Features
+
+### 1. Real-Time Token Streaming
+Watch the agent think and draft in real-time. Powered by a native Server-Sent Events (SSE) parser, responses stream directly to your terminal with zero lag.
+
+### 2. Atomic File Transactions & Rollbacks
+Multi-file modifications are executed inside managed transactions. If an edit fails midway through, FIXEN CODE automatically rolls back all changed files to their exact previous state—preventing half-broken codebases.
+
+### 3. Crash & Interruption Recovery
+Every step is saved to atomic checkpoints under `.fixen/checkpoints/`. If your computer reboots, your terminal closes, or you press `Ctrl+C`, run `fixen resume` to pick up immediately without restarting from scratch.
+
+### 4. Git Branch Checkpoints
+Before executing complex multi-step tasks, FIXEN CODE can snapshot uncommitted changes onto temporary checkpoint branches (`fixen/checkpoint-*`), giving you a safety net to restore anytime.
+
+### 5. Multi-Provider AI Architecture
+- **Groq** *(Default)*: Ultra-low latency inference using `llama-3.3-70b-versatile` with automatic rate-limit backoff.
+- **OpenAI**: First-class support for `gpt-4o` and OpenAI-compatible endpoints.
+- **Google Gemini**: Support for `gemini-1.5-pro` and `gemini-1.5-flash`.
+- **Ollama**: Run 100% offline with local models like `llama3`, `qwen2.5-coder`, or `mistral`.
+
+### 6. 5-Tier Permission & Security Engine
+- **Level 1 (Read Only)**: Allows codebase inspection, reading files, and asking questions. Zero file modifications or command execution.
+- **Level 2 (Ask Before Changes)**: Prompts for your approval before writing, editing, or deleting files.
+- **Level 3 (Ask Before Commands)**: File changes auto-approved; prompts before executing terminal commands.
+- **Level 4 (Controlled Auto - Default)**: Autonomous safe file edits and read-only commands; asks for approval on deletions, sensitive files (`.env`, certificates, SSH keys), and destructive commands.
+- **Level 5 (Full Auto)**: Unrestricted autonomous execution inside workspace boundaries (`--full-auto`).
+
+### 7. 7 Native Engineering Skills
+FIXEN CODE comes pre-loaded with specialized engineering skills that guide the AI's problem-solving behavior:
+- 🪮 **Ponytail**: Lazy Senior Developer mode—enforces the shortest working diff, strict YAGNI, and zero unnecessary boilerplate.
+- 🐞 **Deep Debugger**: Systematic root-cause debugging, stacktrace parsing, and regression prevention.
+- ✨ **Motion Design**: Snappy UI animation standards, easing curves, and responsive transitions (150ms–350ms).
+- 🛡️ **Security Auditor**: OWASP Top 10 mitigation, injection prevention, and credential sanitization.
+- 🧪 **Test-Driven Architect**: TDD workflows, red-green-refactor cycles, and deterministic test authoring.
+- 🔨 **Refactoring Master**: Clean architecture, monolith decomposition, and code smell eradication.
+- 📐 **API Designer**: RESTful & RPC API design standards, uniform JSON envelopes, and status code best practices.
+
+### 8. Automatic Update Notifications
+Never miss an update. FIXEN CODE periodically checks the npm registry in the background. When a new version is released, it displays a non-intrusive update banner. Upgrading is as simple as running `fixen upgrade`.
+
+---
+
+## 📦 Installation
+
+### Global Installation (Recommended)
+
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/fixen-code.git
-cd fixen-code
+npm install -g fixen-code
+```
 
-# Link globally so 'fixen' is in your PATH
+### From Source (For Contributors)
+
+```bash
+git clone https://github.com/fixen-code/fixen-code.git
+cd fixen-code
 npm link
 ```
 
-Or run directly without linking:
+Verify your installation:
 ```bash
-node bin/fixen.js --help
+fixen --version
+fixen doctor
 ```
 
 ---
 
-## 📱 Platform Guides
+## ⚡ Quick Start
 
-### Windows (PowerShell / CMD)
-```powershell
-# Set your Groq API Key
-$env:GROQ_API_KEY="gsk_your_groq_api_key_here"
+### 1. Configure Your API Key
 
-# Run Fixen Code doctor to verify setup
-fixen doctor
-
-# Start interactive session
-fixen
-```
-
-### Android Termux
-Fixen Code is engineered from the ground up to require **zero native C++ build addons** (`node-gyp`), making it 100% compatible with Android Termux!
+FIXEN CODE uses **Groq** by default for lightning-fast responses:
 
 ```bash
-# In Termux:
-pkg update && pkg install nodejs git
-
-# Set your Groq API Key
+# On Linux / macOS / Termux:
 export GROQ_API_KEY="gsk_your_groq_api_key_here"
 
-# Clone & run
-cd ~
-git clone https://github.com/your-org/fixen-code.git
-cd fixen-code
-npm link
+# On Windows (PowerShell):
+$env:GROQ_API_KEY="gsk_your_groq_api_key_here"
 
-# Test installation
-fixen doctor
-
-# Start Fixen Code
-fixen
+# On Windows (CMD):
+set GROQ_API_KEY=gsk_your_groq_api_key_here
 ```
 
----
+*(You can also store it permanently via: `fixen config set providers.groq.apiKey <your-key>`)*
 
-## 💻 CLI Usage
+### 2. Verify Your Environment
+
+Run the doctor command to ensure git, shells, and API keys are ready:
 
 ```bash
-# Start interactive REPL
-fixen
-
-# Autonomous task execution
-fixen "Add unit tests for user authentication and verify they pass"
-
-# Resume an interrupted or crashed session
-fixen resume
-
-# View and inspect active engineering skills
-fixen skills
-fixen skills info ponytail
-
-# Planning Mode (plans without modifying files)
-fixen plan "Refactor database connection pooling"
-
-# Code Review Mode (audits security and bugs)
-fixen review
-
-# System Doctor (checks Node, Git, API keys, shell)
 fixen doctor
+```
 
-# AI Model Selection
-fixen models
+### 3. Run Your First Task
 
-# Project Configuration
-fixen config list
-fixen config set provider groq
-fixen config set model llama-3.3-70b-versatile
-fixen config set permissionLevel 4
+Navigate to any software project and run:
 
-# Initialize FIXEN in current project
-fixen init
+```bash
+# Direct task execution:
+fixen "Find all unhandled promise rejections in src/ and fix them"
+
+# Or launch the interactive terminal:
+fixen
 ```
 
 ---
 
-## 🕹️ Interactive REPL Slash Commands
+## 💻 Operating Modes
 
-Inside `fixen`:
-| Command | Description |
-|---|---|
-| `/help` | Display list of interactive commands |
-| `/auto` | Switch to Autonomous Mode (plan, edit, test, verify) |
-| `/ask` | Switch to Ask Mode (read-only codebase analysis) |
-| `/plan [task]` | Switch to Plan Mode or generate implementation plan |
-| `/code` | Switch to Code Mode (asks before file edits) |
-| `/review` | Switch to Review Mode (security and quality audit) |
-| `/workspace` | Display project tree and structure |
-| `/status` | View repository status and active permission level |
-| `/skills` | Display active engineering skills (Ponytail, Debugger) |
-| `/resume` | Resume last interrupted / crashed session |
-| `/diff` | Inspect uncommitted git changes |
-| `/undo` | Roll back file modifications made in the session |
-| `/clear` | Clear terminal screen |
-| `/exit` | Exit Fixen Code |
+FIXEN CODE supports 5 operating modes tailored to different stages of development:
+
+| Mode | Purpose | File Modifying? |
+| :--- | :--- | :---: |
+| **Auto** *(Default)* | Autonomously plans, edits files, executes tests, and verifies work. | Yes |
+| **Plan** | Analyzes the task and produces a detailed step-by-step implementation plan. | No |
+| **Code** | Implements changes but prompts for confirmation before every modification. | Prompted |
+| **Ask** | Answers technical questions and explains codebase architecture without touching code. | No |
+| **Review** | Audits the codebase for bugs, security vulnerabilities, and code quality. | No |
+
+Switch modes anytime in the interactive REPL using `/auto`, `/plan`, `/code`, `/ask`, or `/review`.
 
 ---
 
-## 🔒 Security & Permissions
+## 💬 Interactive REPL & Slash Commands
 
-Fixen Code enforces 5 clear permission levels:
-1. **Level 1 — Read Only**: No file writes, no file deletes, no command execution.
-2. **Level 2 — Ask Before Changes**: File writes and commands require interactive user approval.
-3. **Level 3 — Ask Before Commands**: File edits within workspace auto-approved; all commands require confirmation.
-4. **Level 4 — Controlled Auto** *(Default)*: Safe file edits and safe read-only commands auto-approved; deletions, sensitive files (`.env`, `*.pem`, `id_rsa`), and dangerous commands require user approval.
-5. **Level 5 — Full Auto**: Unrestricted autonomous execution inside workspace boundary. Explicit opt-in only via `--full-auto`.
+Launch the interactive REPL by running `fixen` without arguments:
+
+```
+[AUTO] fixen> /help
+
+FIXEN CODE Interactive Commands:
+  /help       - Show available commands and options
+  /auto       - Switch to Autonomous Mode (plan, code, test, verify)
+  /ask        - Switch to Ask Mode (read-only questions & explanations)
+  /plan       - Switch to Plan Mode (generate step-by-step plans)
+  /code       - Switch to Code Mode (prompt before file modifications)
+  /review     - Switch to Review Mode (security & code quality review)
+  /workspace  - View project structure and file tree
+  /status     - Show repository status & active configuration
+  /skills     - List active engineering skills
+  /resume     - Resume last interrupted session from checkpoint
+  /upgrade    - Check and upgrade to the latest version from npm
+  /diff       - View uncommitted git changes
+  /undo       - Revert modifications made in the current session
+  /clear      - Clear the terminal screen
+  /exit       - Exit FIXEN CODE
+```
 
 ---
 
-## 🧪 Automated Testing
+## 🛠️ CLI Commands & Flags Reference
 
-Fixen Code comes with a comprehensive, deterministic unit and integration test suite:
+```bash
+# Tasks & Interactive
+fixen                          # Launch interactive REPL
+fixen "task description"       # Execute an autonomous task directly
+fixen chat                     # Start interactive REPL
+
+# Specialized Workflows
+fixen plan "task description"  # Generate an implementation plan only
+fixen review [path]            # Run security, bug, and quality review
+fixen resume [sessionId]       # Resume an interrupted or crashed session
+fixen upgrade                  # Upgrade fixen-code to latest npm version
+
+# Inspection & Configuration
+fixen doctor                   # System and environment diagnosis
+fixen config [get|set|list]    # Inspect or change persistent settings
+fixen models                   # Display available providers and models
+fixen skills [list|info]       # Inspect installed engineering skills
+fixen init                     # Initialize .fixen configuration in current directory
+
+# Global Flags
+--provider <name>              # Switch provider on the fly (groq, openai, gemini, ollama)
+--model <name>                 # Override model name
+--full-auto                    # Allow autonomous execution without interactive prompts
+--version, -v                  # Display version
+--help, -h                     # Show help message
+```
+
+---
+
+## 📱 Cross-Platform Support
+
+FIXEN CODE is built from the ground up with portability in mind:
+
+- **Windows 10 & 11**: Full PowerShell and CMD support with native exit-code handling and path separator normalization.
+- **Linux**: Ubuntu, Debian, Fedora, Arch, CentOS (POSIX shell compatible).
+- **macOS**: Apple Silicon & Intel (Zsh and Bash).
+- **Android (Termux)**: Requires **zero native C++ build tools (`node-gyp`)**. Lightweight RAM and CPU footprint designed to run smoothly on mobile devices.
+
+### Running on Android Termux
+
+```bash
+pkg update && pkg install nodejs git
+npm install -g fixen-code
+export GROQ_API_KEY="gsk_..."
+fixen
+```
+
+---
+
+## 🧪 Deterministic Test Suite
+
+FIXEN CODE comes with a comprehensive, zero-dependency unit and integration test suite:
 
 ```bash
 npm test
 ```
 
-### Included Tests:
-- `platform.test.js`: OS, Termux, shell, and terminal dimension detection.
-- `security.test.js`: Path traversal bounds checking, symlink protection, secret masking, permission levels.
-- `file-tools.test.js`: Atomic file writes, backups, edit string replacement, search, inspect, unified diffs.
-- `terminal-tools.test.js`: Cross-platform command execution, exit codes, timeouts, dangerous pattern detection.
-- `git.test.js`: Git status, diff, checkpoint creation, and non-repo handling.
-- `scanner.test.js`: Recursive project scanning, `.gitignore` filtering, language and framework detection.
-- `groq-provider.test.js`: Groq API adapter, token tracking, retry handling.
-- `plugin.test.js`: Plugin registration, input schema, execution timeouts.
-- `session.test.js`: Conversation persistence, file modification logging, rollback/undo.
-- `agent-loop.test.js`: Scripted autonomous loop, loop detection, reasoning recovery, verification.
-- `integration.test.js`: End-to-end task execution (create file, execute test command, edit code, verify).
+### All 20/20 Test Suites Passing:
+
+- `platform.test.js`: OS, shell, and Termux platform detection.
+- `security.test.js`: Path traversal bounds, symlink escapes, secret masking, permission gates.
+- `file-tools.test.js`: Atomic file writes, backups, edit replacements, unified diffs.
+- `terminal-tools.test.js`: Cross-platform command execution, exit codes, dangerous pattern detection.
+- `git.test.js`: Git status, diff parsing, and checkpoint commits.
+- `scanner.test.js`: Recursive directory scanning, `.gitignore` filtering, framework detection.
+- `groq-provider.test.js`: Groq adapter, token tracking, retry and rate-limit backoff.
+- `plugin.test.js`: Plugin registration, input schema validation, execution timeouts.
+- `session.test.js`: Session persistence, modification history, rollback `/undo`.
+- `checkpoint.test.js`: Atomic crash checkpoint saving, loading, and recovery.
+- `skills.test.js`: YAML frontmatter parsing, dynamic skill injection into system prompt.
+- `resume.test.js`: Resuming interrupted workflows from saved checkpoints.
+- `update-notifier.test.js`: NPM registry version checks, semver comparison, alert formatting.
+- `ui-box.test.js`: Unicode box rendering, summary card formatting, ANSI colors.
+- `agent-loop.test.js`: Autonomous loop orchestration, cycle detection, verification gates.
+- `integration.test.js`: End-to-end task execution (create file, run tests, edit code, verify).
+- `stream-renderer.test.js`: Real-time token streaming output and newline preservation.
+- `file-transaction.test.js`: Multi-file atomic batch operations and automated rollback on failure.
+- `git-branching.test.js`: Temporary checkpoint branch creation, listing, restoration, and cleanup.
+- `streaming-provider.test.js`: Server-Sent Events (SSE) stream parsing for tokens and tool calls.
 
 ---
 
-## 🗺️ Roadmap & Milestones
+## 📄 License
 
-- [x] **V0.1 — Core Foundation** *(Completed)*
-  - Modular CLI with ASCII banner.
-  - Groq provider implementation (`llama-3.3-70b-versatile`).
-  - Autonomous Agent Loop (Understand → Inspect → Plan → Tool → Observe → Reason → Verify).
-  - Cross-platform Terminal Execution (Windows PowerShell/CMD, Linux, macOS, Termux).
-  - Safe File System Engine with Atomic Writes & Backups.
-  - Security & Permission Engine (5 levels, Path Guard, Secret Guard).
-  - Codebase Intelligence (Scanner, Detector, Analyzer).
-  - Git Manager & Session Undo.
-  - Extensible Plugin System.
-  - 100% Passing Test Suite.
-- [x] **V0.2 — Advanced Reliability, Streaming & Skills** *(Completed)*
-  - Real-time LLM token streaming with native SSE parser (`chatStream`).
-  - Real-time typing `StreamRenderer` in CLI and REPL.
-  - Atomic `FileTransaction` multi-file batch engine with automatic rollback on failure.
-  - Git Branching Checkpoints (`fixen/checkpoint-*`) with auto-cleanup.
-  - 7 Transferred Engineering Skills (`ponytail`, `deep-debugger`, `motion-design`, `security-auditor`, `test-driven-architect`, `refactoring-master`, `api-designer`).
-  - NPM Update Notifier (`fixen upgrade` / `/upgrade`) with 12h cache.
-  - 3x More Polished UI (Unicode box drawing, badges, execution summary cards, progress bars).
-  - 20/20 Test Suite passing.
-- [ ] **V0.3 — Engineering Automation**
-  - Automated test generation and regression detection.
-  - Auto-debugger workflows with stacktrace parsing.
-- [ ] **V0.4 — Extensibility & MCP**
-  - Model Context Protocol (MCP) server support.
-  - Browser automation tooling.
-- [ ] **V0.5 — Multi-Agent Orchestration**
-  - Planner, Researcher, Coder, and Reviewer subagents.
+Distributed under the **MIT License**. See [LICENSE](LICENSE) for more information.
 
 ---
 
-## 📜 License
-MIT License. Built for developers by the FIXEN CODE Team.
+<div align="center">
+  <b>FIXEN CODE</b> — <i>Build Anything. Fix Everything.</i>
+</div>
