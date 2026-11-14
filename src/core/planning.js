@@ -6,6 +6,17 @@ class PlanningEngine {
   }
 
   async createPlan(task, projectSummary) {
+    // For pure question/explanation requests, skip LLM planning (saves ~2s per request)
+    if (this._isQuestionOnly(task)) {
+      return {
+        objective: task,
+        isQuestion: true,
+        steps: [
+          { id: 1, action: 'answer', description: 'Analyze workspace and answer the question', files: [], verification: 'Response provided' }
+        ]
+      };
+    }
+
     const prompt = [
       'You are the Planning Engine of FIXEN CODE, an autonomous AI software engineering agent.',
       'Analyze the project architecture and the requested user task, then create a clear, step-by-step implementation plan.',
@@ -48,6 +59,16 @@ class PlanningEngine {
         ]
       };
     }
+  }
+
+  _isQuestionOnly(task) {
+    const t = task.trim().toLowerCase();
+    if (t.length < 60 &&
+        /\b(what|how|why|when|where|which|who|explain|describe|tell me|show me|list|summarize|does|is|are|can you|could you)\b/.test(t) &&
+        !/\b(create|fix|add|remove|delete|update|refactor|build|write|edit|change|implement|debug|deploy|generate|make|setup|rename|move|copy)\b/.test(t)) {
+      return true;
+    }
+    return false;
   }
 
   formatPlanMarkdown(plan) {

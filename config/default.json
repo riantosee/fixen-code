@@ -1,6 +1,6 @@
 {
   "provider": "groq",
-  "model": "llama-3.3-70b-versatile",
+  "model": "llama3-70b-8192",
   "permissionLevel": 4,
   "maxIterations": 25,
   "toolTimeoutMs": 30000,
@@ -10,11 +10,12 @@
   "providers": {
     "groq": {
       "endpoint": "https://api.groq.com/openai/v1",
-      "defaultModel": "llama-3.3-70b-versatile",
+      "defaultModel": "llama3-70b-8192",
       "models": [
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
         "llama3-70b-8192",
+        "llama3-8b-8192",
+        "llama-3.1-8b-instant",
+        "llama-3.3-70b-versatile",
         "mixtral-8x7b-32768",
         "gemma2-9b-it"
       ],

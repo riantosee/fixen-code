@@ -221,6 +221,8 @@ class Repl {
       try {
         if (trimmed.startsWith('/')) {
           await this.handleSlashCommand(trimmed);
+        } else if (this._isConversational(trimmed)) {
+          await this._handleChat(trimmed);
         } else {
           console.log('');
           const startTime = Date.now();
@@ -245,6 +247,54 @@ class Repl {
       console.log(colors.gray('\nExiting FIXEN CODE.'));
       process.exit(0);
     });
+  }
+  // Returns true if input looks like a greeting/question, not a coding task
+  _isConversational(input) {
+    const t = input.trim().toLowerCase();
+    // Very short inputs (≤ 20 chars) with no code keywords
+    if (t.length <= 20) {
+      const codeKeywords = /\b(fix|bug|create|add|remove|delete|update|refactor|build|install|run|test|write|edit|change|implement|debug|deploy|generate|make|setup|init|rename|move|copy|show|list|check|analyze|review|scan)\b/;
+      if (!codeKeywords.test(t)) return true;
+    }
+    // Explicit greetings
+    const greetingPattern = /^(hi|hello|hey|halo|halo!|hai|hei|howdy|sup|yo|good\s*(morning|afternoon|evening|night)|apa kabar|siapa kamu|kamu siapa|who are you|what are you|what can you do|help me|tell me about yourself)[\s!?.]*$/;
+    if (greetingPattern.test(t)) return true;
+    return false;
+  }
+
+  async _handleChat(input) {
+    try {
+      const chatPrompt = [
+        'You are FIXEN CODE, an autonomous AI software engineering agent. Brand: "Build Anything. Fix Everything."',
+        'The user sent a conversational message, not a coding task.',
+        'Reply briefly and naturally in the same language they used. Keep it under 3 sentences.',
+        `User: ${input}`
+      ].join('\n');
+
+      let replied = false;
+      const onToken = this.orchestrator.provider.chatStream
+        ? (token) => {
+            if (!replied) { process.stdout.write('\n  '); replied = true; }
+            process.stdout.write(token);
+          }
+        : null;
+
+      if (onToken && typeof this.orchestrator.provider.chatStream === 'function') {
+        await this.orchestrator.provider.chatStream({
+          messages: [{ role: 'user', content: chatPrompt }],
+          temperature: 0.7
+        }, onToken);
+        process.stdout.write('\n\n');
+      } else {
+        const res = await this.orchestrator.provider.chat({
+          messages: [{ role: 'user', content: chatPrompt }],
+          temperature: 0.7
+        });
+        console.log('\n  ' + res.content.trim() + '\n');
+      }
+    } catch (err) {
+      console.log('\n  ' + colors.gray('(Chat unavailable — type a coding task to get started)') + '\n');
+    }
   }
 }
 
