@@ -4,7 +4,7 @@
   "description": "Autonomous AI software engineering agent. Build Anything. Fix Everything.",
   "main": "src/index.js",
   "bin": {
-    "fixen": "./bin/fixen.js"
+    "fixen": "bin/fixen.js"
   },
   "files": [
     "bin/",
@@ -36,7 +36,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fixen-code/fixen-code.git"
+    "url": "git+https://github.com/fixen-code/fixen-code.git"
   },
   "homepage": "https://github.com/fixen-code/fixen-code#readme",
   "bugs": {
