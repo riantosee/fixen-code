@@ -24,6 +24,8 @@ Zero compiled dependencies. Pure Node.js CommonJS. Blazing fast startup across *
 - **Multi-Provider Architecture**: Built-in support for **Groq**, **OpenAI**, **Google Gemini**, and local **Ollama**.
 - **Codebase Intelligence**: Recursive project scanning, language and framework detection, package manifest analysis, entry-point detection, and file tree generation.
 - **Safe File Operations**: Atomic writes (`.tmp` + rename), automatic file backups (`.fixen/backups/`) before overwrite/deletion, unified diff previews, and full `/undo` capability.
+- **Crash & Interruption Resilient**: Automatic atomic checkpointing at every step (`.fixen/checkpoints/`). If an agent process crashes, terminal closes, or network drops, FIXEN CODE detects the interrupted job on startup and seamlessly resumes from the exact point of interruption via `fixen resume`.
+- **Transferred Native Engineering Skills**: Pre-loaded with the **Ponytail (Lazy Senior Developer)** and **Deep Debugger** skills, enforcing shortest working diffs, strict YAGNI, platform-first implementations, and systematic root cause resolution.
 - **Enterprise-Grade Security & Permissions**:
   - 5 Permission Levels (Read-Only to Full Auto).
   - Path traversal and workspace boundary enforcement.
@@ -108,6 +110,13 @@ fixen
 # Autonomous task execution
 fixen "Add unit tests for user authentication and verify they pass"
 
+# Resume an interrupted or crashed session
+fixen resume
+
+# View and inspect active engineering skills
+fixen skills
+fixen skills info ponytail
+
 # Planning Mode (plans without modifying files)
 fixen plan "Refactor database connection pooling"
 
@@ -145,6 +154,8 @@ Inside `fixen`:
 | `/review` | Switch to Review Mode (security and quality audit) |
 | `/workspace` | Display project tree and structure |
 | `/status` | View repository status and active permission level |
+| `/skills` | Display active engineering skills (Ponytail, Debugger) |
+| `/resume` | Resume last interrupted / crashed session |
 | `/diff` | Inspect uncommitted git changes |
 | `/undo` | Roll back file modifications made in the session |
 | `/clear` | Clear terminal screen |
