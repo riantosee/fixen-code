@@ -2,10 +2,13 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 class SkillManager {
   constructor(workspace = process.cwd()) {
     this.workspace = path.resolve(workspace);
+    this.bundledSkillsDir = path.resolve(__dirname, '../../skills');
+    this.globalSkillsDir = path.join(os.homedir(), '.fixen', 'skills');
     this.projectSkillsDir = path.join(this.workspace, 'skills');
     this.localSkillsDir = path.join(this.workspace, '.fixen', 'skills');
     this.skills = new Map();
@@ -14,7 +17,43 @@ class SkillManager {
   }
 
   init() {
+    this.autoInstallSkills();
     this.loadAll();
+  }
+
+  autoInstallSkills(customTarget = null) {
+    const installed = [];
+    const targets = [this.globalSkillsDir];
+    if (customTarget) targets.push(customTarget);
+
+    if (!fs.existsSync(this.bundledSkillsDir)) return installed;
+
+    for (const targetDir of targets) {
+      try {
+        if (!fs.existsSync(targetDir)) {
+          fs.mkdirSync(targetDir, { recursive: true });
+        }
+
+        const entries = fs.readdirSync(this.bundledSkillsDir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            const srcDir = path.join(this.bundledSkillsDir, entry.name);
+            const destDir = path.join(targetDir, entry.name);
+            if (!fs.existsSync(destDir)) {
+              fs.mkdirSync(destDir, { recursive: true });
+            }
+
+            const skillMd = path.join(srcDir, 'SKILL.md');
+            const destSkillMd = path.join(destDir, 'SKILL.md');
+            if (fs.existsSync(skillMd) && !fs.existsSync(destSkillMd)) {
+              fs.copyFileSync(skillMd, destSkillMd);
+              installed.push({ name: entry.name, path: destSkillMd });
+            }
+          }
+        }
+      } catch {}
+    }
+    return installed;
   }
 
   parseSkillFile(filePath) {
@@ -80,6 +119,8 @@ class SkillManager {
 
   loadAll() {
     this.skills.clear();
+    this.loadDirectory(this.bundledSkillsDir);
+    this.loadDirectory(this.globalSkillsDir);
     this.loadDirectory(this.projectSkillsDir);
     this.loadDirectory(this.localSkillsDir);
   }

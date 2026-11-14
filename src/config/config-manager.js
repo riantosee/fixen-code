@@ -181,11 +181,24 @@ class ConfigManager {
     // Common env fallbacks
     if (provider === 'groq' && process.env.GROQ_API_KEY) return process.env.GROQ_API_KEY;
     if (provider === 'openai' && process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
+    if (provider === 'deepseek' && process.env.DEEPSEEK_API_KEY) return process.env.DEEPSEEK_API_KEY;
+    if (provider === 'openrouter' && process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY;
+    if ((provider === 'anthropic' || provider === 'claude') && process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
+    if (provider === 'mistral' && process.env.MISTRAL_API_KEY) return process.env.MISTRAL_API_KEY;
+    if (provider === 'together' && process.env.TOGETHER_API_KEY) return process.env.TOGETHER_API_KEY;
+    if (provider === 'custom' && process.env.CUSTOM_API_KEY) return process.env.CUSTOM_API_KEY;
     if (provider === 'gemini' && (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)) {
       return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     }
 
     return null;
+  }
+
+  isFirstRun() {
+    if (this.get('hasCompletedSetup')) return false;
+    const activeProvider = this.get('provider', 'groq');
+    if (activeProvider === 'ollama' || activeProvider === 'lmstudio') return false;
+    return !this.getApiKey(activeProvider);
   }
 }
 

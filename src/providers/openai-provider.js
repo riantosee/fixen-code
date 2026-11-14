@@ -4,7 +4,7 @@ const BaseProvider = require('./base-provider');
 
 class OpenAIProvider extends BaseProvider {
   constructor(config = {}) {
-    super('openai', {
+    super(config.name || 'openai', {
       endpoint: 'https://api.openai.com/v1',
       defaultModel: 'gpt-4o',
       ...config

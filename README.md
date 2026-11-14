@@ -300,7 +300,7 @@ FIXEN CODE comes with a comprehensive, zero-dependency unit and integration test
 npm test
 ```
 
-### All 20/20 Test Suites Passing:
+### All 22/22 Test Suites Passing:
 
 - `platform.test.js`: OS, shell, and Termux platform detection.
 - `security.test.js`: Path traversal bounds, symlink escapes, secret masking, permission gates.
@@ -322,6 +322,8 @@ npm test
 - `file-transaction.test.js`: Multi-file atomic batch operations and automated rollback on failure.
 - `git-branching.test.js`: Temporary checkpoint branch creation, listing, restoration, and cleanup.
 - `streaming-provider.test.js`: Server-Sent Events (SSE) stream parsing for tokens and tool calls.
+- `anthropic-provider.test.js`: Native Anthropic Claude Messages API, tool schemas, and token usage.
+- `setup-wizard.test.js`: First-run onboarding wizard, multi-provider factory, and skills auto-installation.
 
 ---
 

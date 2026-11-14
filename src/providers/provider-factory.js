@@ -4,6 +4,7 @@ const GroqProvider = require('./groq-provider');
 const OpenAIProvider = require('./openai-provider');
 const GeminiProvider = require('./gemini-provider');
 const OllamaProvider = require('./ollama-provider');
+const AnthropicProvider = require('./anthropic-provider');
 
 class ProviderFactory {
   static create(providerName = 'groq', configManager) {
@@ -25,15 +26,23 @@ class ProviderFactory {
     switch (name) {
       case 'groq':
         return new GroqProvider(mergedConfig);
-      case 'openai':
-        return new OpenAIProvider(mergedConfig);
+      case 'anthropic':
+      case 'claude':
+        return new AnthropicProvider(mergedConfig);
       case 'gemini':
       case 'google':
         return new GeminiProvider(mergedConfig);
       case 'ollama':
         return new OllamaProvider(mergedConfig);
+      case 'openai':
+      case 'deepseek':
+      case 'openrouter':
+      case 'mistral':
+      case 'together':
+      case 'lmstudio':
+      case 'custom':
       default:
-        // Assume custom OpenAI-compatible endpoint
+        // OpenAI-compatible architecture handles DeepSeek, OpenRouter, Mistral, Together, Custom API, etc.
         return new OpenAIProvider({
           ...mergedConfig,
           name

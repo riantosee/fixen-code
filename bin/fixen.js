@@ -13,6 +13,8 @@ const UpdateNotifier = require('../src/utils/update-notifier');
 const StreamRenderer = require('../src/cli/stream-renderer');
 const { renderSummaryCard } = require('../src/cli/summary-card');
 const UI = require('../src/cli/ui');
+const SetupWizard = require('../src/cli/wizard');
+const SkillManager = require('../src/skills/skill-manager');
 const pkg = require('../package.json');
 
 let activeOrchestrator = null;
@@ -103,8 +105,16 @@ Options:
     return Commands.resume(sessionId, process.cwd());
   }
 
+  if (firstArg === 'setup') {
+    const wizard = new SetupWizard(configManager, process.cwd());
+    await wizard.run();
+    return;
+  }
+
   if (firstArg === 'init') {
-    return Commands.init(process.cwd());
+    const wizard = new SetupWizard(configManager, process.cwd());
+    await wizard.run();
+    return;
   }
 
   if (firstArg === 'plan') {
@@ -121,6 +131,16 @@ Options:
     const target = args.slice(1).join(' ');
     printBanner(pkg.version, configManager.config);
     return Commands.runReview(target, process.cwd());
+  }
+
+  // Ensure skills are always auto-installed
+  new SkillManager(process.cwd()).autoInstallSkills();
+
+  // First-run interactive setup wizard
+  if (configManager.isFirstRun() && !process.env.CI && process.stdin.isTTY) {
+    const wizard = new SetupWizard(configManager, process.cwd());
+    await wizard.run();
+    configManager.config = configManager.loadMergedConfig();
   }
 
   // Interactive REPL or direct task execution

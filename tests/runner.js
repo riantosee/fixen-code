@@ -27,7 +27,9 @@ async function runAllTests() {
     'stream-renderer.test.js',
     'file-transaction.test.js',
     'git-branching.test.js',
-    'streaming-provider.test.js'
+    'streaming-provider.test.js',
+    'anthropic-provider.test.js',
+    'setup-wizard.test.js'
   ];
 
   let passed = 0;

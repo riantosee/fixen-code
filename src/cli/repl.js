@@ -82,6 +82,7 @@ class Repl {
     console.log(`  ${colors.cyan('/workspace')}  - View project structure & file tree`);
     console.log(`  ${colors.cyan('/status')}     - Show repository status & active settings`);
     console.log(`  ${colors.cyan('/skills')}     - Show active engineering skills`);
+    console.log(`  ${colors.cyan('/setup')}      - Run interactive agent & model setup wizard`);
     console.log(`  ${colors.cyan('/resume')}     - Resume last interrupted session`);
     console.log(`  ${colors.cyan('/upgrade')}    - Check and upgrade to latest version from npm`);
     console.log(`  ${colors.cyan('/diff')}       - View uncommitted git changes`);
@@ -149,6 +150,13 @@ class Repl {
           console.log(`  ${s.enabled ? colors.green('●') : colors.gray('○')} ${colors.bold(s.name)}: ${s.description || 'No description'}`);
         }
         console.log('');
+        return true;
+      case '/setup':
+        const SetupWizard = require('./wizard');
+        const wizard = new SetupWizard(this.orchestrator.configManager, this.workspace);
+        await wizard.run();
+        this.orchestrator.configManager.config = this.orchestrator.configManager.loadMergedConfig();
+        this.orchestrator.init();
         return true;
       case '/upgrade':
       case '/update':
